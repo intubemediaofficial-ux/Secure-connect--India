@@ -106,7 +106,7 @@ export default function AdminUsersPage() {
       <div className="card overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
           </div>
         ) : users.length === 0 ? (
           <div className="text-center py-12 text-gray-400">
@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
         ) : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800">
+              <tr className="border-b border-white/[0.06]">
                 <th className="text-left py-3 px-4 font-medium text-gray-500">User</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-500">Phone</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-500">Email</th>
@@ -127,24 +127,24 @@ export default function AdminUsersPage() {
             </thead>
             <tbody>
               {users.map((user) => (
-                <tr key={user.id} className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <tr key={user.id} className="border-b border-white/[0.04] hover:bg-white/[0.03] transition">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-bold text-primary-600">{(user.name || user.phone)?.[0]?.toUpperCase()}</span>
+                      <div className="w-8 h-8 bg-primary-500/20 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-primary-400">{(user.name || user.phone)?.[0]?.toUpperCase()}</span>
                       </div>
                       <div>
-                        <p className="font-medium">{user.name || 'No Name'}</p>
+                        <p className="font-medium text-gray-200">{user.name || 'No Name'}</p>
                         <p className="text-xs text-gray-500">{user.gender || '-'}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.phone}</td>
-                  <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{user.email || '-'}</td>
-                  <td className="py-3 px-4 font-medium">₹{user.wallet?.balance?.toFixed(2) || '0.00'}</td>
+                  <td className="py-3 px-4 text-gray-400">{user.phone}</td>
+                  <td className="py-3 px-4 text-gray-400">{user.email || '-'}</td>
+                  <td className="py-3 px-4 font-medium text-gray-200">₹{user.wallet?.balance?.toFixed(2) || '0.00'}</td>
                   <td className="py-3 px-4">
                     <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      user.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      user.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-emergency-500/20 text-emergency-400 border border-emergency-500/30'
                     }`}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </span>
@@ -155,7 +155,7 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => handleToggleStatus(user.id, user.isActive)}
                         disabled={actionLoading === user.id}
-                        className={`p-2 rounded-lg transition ${user.isActive ? 'hover:bg-red-50 text-red-500' : 'hover:bg-green-50 text-green-500'}`}
+                        className={`p-2 rounded-lg transition ${user.isActive ? 'hover:bg-emergency-500/10 text-emergency-400' : 'hover:bg-emerald-500/10 text-emerald-400'}`}
                         title={user.isActive ? 'Deactivate' : 'Activate'}
                       >
                         {actionLoading === user.id ? <Loader2 className="w-4 h-4 animate-spin" /> : user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
@@ -163,7 +163,7 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => handleDelete(user.id)}
                         disabled={actionLoading === user.id}
-                        className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition"
+                        className="p-2 rounded-lg hover:bg-emergency-500/10 text-emergency-400 transition"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -178,13 +178,13 @@ export default function AdminUsersPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-center justify-between pt-4 mt-4 border-t border-white/[0.06]">
             <p className="text-sm text-gray-500">Page {page} of {totalPages}</p>
             <div className="flex gap-2">
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30">
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 rounded-lg hover:bg-white/[0.05] disabled:opacity-30 text-gray-400">
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30">
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 rounded-lg hover:bg-white/[0.05] disabled:opacity-30 text-gray-400">
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>

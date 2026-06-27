@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   Shield, LayoutDashboard, User, Calendar, MessageSquare,
-  IndianRupee, Star, LogOut, Menu, X, Wifi, WifiOff
+  IndianRupee, Star, LogOut, Menu, X, Wifi, WifiOff, Sparkles
 } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
@@ -72,33 +72,35 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
+    <div className="page-bg flex">
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="flex items-center gap-2 p-6 border-b border-gray-100 dark:border-gray-800">
-          <Shield className="w-8 h-8 text-emerald-600" />
+      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 glass-sidebar transform transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+        <div className="flex items-center gap-3 p-6 border-b border-white/[0.06]">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <Shield className="w-6 h-6 text-white" />
+          </div>
           <div>
-            <h1 className="font-bold text-lg text-emerald-600">SecureConnect</h1>
+            <h1 className="font-bold text-lg bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-teal-400">SecureConnect</h1>
             <p className="text-xs text-gray-500">Expert Portal</p>
           </div>
-          <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden">
+          <button onClick={() => setSidebarOpen(false)} className="ml-auto lg:hidden text-gray-400">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Online/Offline Toggle */}
-        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+        <div className="px-4 py-3 border-b border-white/[0.06]">
           <button
             onClick={handleToggleOnline}
             disabled={toggling}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition ${
+            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
               isOnline
-                ? 'bg-green-50 dark:bg-green-900/20 text-green-600 border border-green-200 dark:border-green-800'
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-500 border border-gray-200 dark:border-gray-700'
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-lg shadow-emerald-500/10'
+                : 'bg-white/[0.05] text-gray-500 border border-white/[0.08]'
             }`}
           >
             {isOnline ? <Wifi className="w-4 h-4" /> : <WifiOff className="w-4 h-4" />}
@@ -114,10 +116,9 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                className={`nav-item ${isActive
+                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'nav-item-inactive'
                 }`}
               >
                 <item.icon className="w-5 h-5" />
@@ -127,18 +128,18 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
           })}
         </nav>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 dark:border-gray-800">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/[0.06]">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 bg-emerald-100 dark:bg-emerald-900 rounded-full flex items-center justify-center relative">
-              <span className="text-sm font-bold text-emerald-600">{expert?.name?.[0] || 'E'}</span>
-              {isOnline && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900" />}
+            <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center relative shadow-lg shadow-emerald-500/20">
+              <span className="text-sm font-bold text-white">{expert?.name?.[0] || 'E'}</span>
+              {isOnline && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-gray-900 animate-pulse" />}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{expert?.name || 'Expert'}</p>
+              <p className="text-sm font-medium text-gray-200 truncate">{expert?.name || 'Expert'}</p>
               <p className="text-xs text-gray-500 truncate">{expert?.category?.replace('_', ' ') || ''}</p>
             </div>
           </div>
-          <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-gray-500 hover:text-red-600 transition w-full px-2 py-1.5">
+          <button onClick={handleLogout} className="flex items-center gap-2 text-sm text-gray-500 hover:text-emergency-400 transition w-full px-2 py-1.5 rounded-lg hover:bg-emergency-500/10">
             <LogOut className="w-4 h-4" />
             Logout
           </button>
@@ -147,15 +148,20 @@ export default function ExpertLayout({ children }: { children: React.ReactNode }
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <header className="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center gap-4">
-          <button onClick={() => setSidebarOpen(true)} className="lg:hidden">
+        <header className="sticky top-0 z-30 glass-header px-6 py-4 flex items-center gap-4">
+          <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-gray-400">
             <Menu className="w-6 h-6" />
           </button>
-          <h2 className="text-lg font-semibold flex-1">
+          <h2 className="text-lg font-semibold text-white flex-1 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-emerald-400" />
             {navItems.find(i => i.href === pathname)?.label || 'Expert'}
           </h2>
-          <div className={`flex items-center gap-1.5 text-sm ${isOnline ? 'text-green-600' : 'text-gray-400'}`}>
-            <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+          <div className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full border ${
+            isOnline
+              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+              : 'text-gray-500 bg-white/[0.03] border-white/[0.08]'
+          }`}>
+            <span className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-400 animate-pulse' : 'bg-gray-500'}`} />
             {isOnline ? 'Online' : 'Offline'}
           </div>
         </header>

@@ -71,10 +71,10 @@ export default function AdminSOSPage() {
   const totalPages = Math.ceil(total / limit);
 
   const statusConfig: Record<string, { bg: string; text: string; dot: string }> = {
-    ACTIVE: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400', dot: 'bg-red-500' },
-    RESOLVED: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400', dot: 'bg-green-500' },
-    ESCALATED: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400', dot: 'bg-amber-500' },
-    FALSE_ALARM: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-600 dark:text-gray-400', dot: 'bg-gray-400' },
+    ACTIVE: { bg: 'bg-emergency-500/20', text: 'text-emergency-400', dot: 'bg-emergency-500' },
+    RESOLVED: { bg: 'bg-emerald-500/20', text: 'text-emerald-400', dot: 'bg-emerald-500' },
+    ESCALATED: { bg: 'bg-amber-500/20', text: 'text-amber-400', dot: 'bg-amber-500' },
+    FALSE_ALARM: { bg: 'bg-white/[0.06]', text: 'text-gray-400', dot: 'bg-gray-400' },
   };
 
   return (
@@ -89,8 +89,8 @@ export default function AdminSOSPage() {
                 onClick={() => { setFilter(f); setPage(1); }}
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
                   filter === f
-                    ? f === 'ACTIVE' ? 'bg-red-600 text-white' : 'bg-primary-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 hover:bg-gray-200'
+                    ? f === 'ACTIVE' ? 'bg-emergency-500/20 text-emergency-400 border border-emergency-500/30' : 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                    : 'bg-white/[0.05] text-gray-400 border border-white/[0.08] hover:bg-white/[0.08]'
                 }`}
               >
                 {f === 'all' ? 'All Alerts' : f}
@@ -104,7 +104,7 @@ export default function AdminSOSPage() {
       {/* Alerts */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
         </div>
       ) : alerts.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
@@ -120,9 +120,9 @@ export default function AdminSOSPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <AlertTriangle className={`w-5 h-5 ${alert.status === 'ACTIVE' ? 'text-red-500' : 'text-gray-400'}`} />
+                      <AlertTriangle className={`w-5 h-5 ${alert.status === 'ACTIVE' ? 'text-emergency-400' : 'text-gray-400'}`} />
                       <div>
-                        <h3 className="font-semibold">{alert.user?.name || 'Unknown User'}</h3>
+                        <h3 className="font-semibold text-white">{alert.user?.name || 'Unknown User'}</h3>
                         <p className="text-sm text-gray-500 flex items-center gap-1">
                           <Phone className="w-3 h-3" /> {alert.user?.phone}
                           {alert.user?.email && <span> | {alert.user.email}</span>}
@@ -150,7 +150,7 @@ export default function AdminSOSPage() {
                             href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-primary-600 hover:underline flex items-center gap-0.5"
+                            className="text-primary-400 hover:underline flex items-center gap-0.5"
                           >
                             View Location <ExternalLink className="w-3 h-3" />
                           </a>
@@ -169,9 +169,9 @@ export default function AdminSOSPage() {
 
                     {(alert.audioUrl || alert.photoUrl || alert.videoUrl) && (
                       <div className="flex gap-2 mt-2">
-                        {alert.audioUrl && <a href={alert.audioUrl} className="text-xs text-primary-600 hover:underline">Audio Evidence</a>}
-                        {alert.photoUrl && <a href={alert.photoUrl} className="text-xs text-primary-600 hover:underline">Photo Evidence</a>}
-                        {alert.videoUrl && <a href={alert.videoUrl} className="text-xs text-primary-600 hover:underline">Video Evidence</a>}
+                        {alert.audioUrl && <a href={alert.audioUrl} className="text-xs text-primary-400 hover:underline">Audio Evidence</a>}
+                        {alert.photoUrl && <a href={alert.photoUrl} className="text-xs text-primary-400 hover:underline">Photo Evidence</a>}
+                        {alert.videoUrl && <a href={alert.videoUrl} className="text-xs text-primary-400 hover:underline">Video Evidence</a>}
                       </div>
                     )}
                   </div>
@@ -198,10 +198,10 @@ export default function AdminSOSPage() {
         <div className="flex items-center justify-between">
           <p className="text-sm text-gray-500">Page {page} of {totalPages}</p>
           <div className="flex gap-2">
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 rounded-lg bg-white dark:bg-gray-900 border hover:bg-gray-50 disabled:opacity-30">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 rounded-lg bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.1] disabled:opacity-30 text-gray-400">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 rounded-lg bg-white dark:bg-gray-900 border hover:bg-gray-50 disabled:opacity-30">
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 rounded-lg bg-white/[0.05] border border-white/[0.08] hover:bg-white/[0.1] disabled:opacity-30 text-gray-400">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

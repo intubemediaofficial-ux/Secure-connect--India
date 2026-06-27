@@ -61,26 +61,26 @@ export default function AdminConsultationsPage() {
   };
 
   const statusColors: Record<string, string> = {
-    PENDING: 'bg-yellow-100 text-yellow-700',
-    ACCEPTED: 'bg-blue-100 text-blue-700',
-    ACTIVE: 'bg-green-100 text-green-700',
-    COMPLETED: 'bg-gray-100 text-gray-700',
-    REJECTED: 'bg-red-100 text-red-700',
-    CANCELLED: 'bg-gray-100 text-gray-500',
+    PENDING: 'bg-amber-500/20 text-amber-400',
+    ACCEPTED: 'bg-blue-500/20 text-blue-400',
+    ACTIVE: 'bg-emerald-500/20 text-emerald-400',
+    COMPLETED: 'bg-gray-500/20 text-gray-400',
+    REJECTED: 'bg-emergency-500/20 text-emergency-400',
+    CANCELLED: 'bg-gray-500/20 text-gray-500',
   };
 
   return (
     <div className="space-y-4">
       <div className="card">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold">All Consultations</h3>
+          <h3 className="font-semibold text-white">All Consultations</h3>
           <p className="text-sm text-gray-500">Total: {total}</p>
         </div>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-primary-400" />
         </div>
       ) : consultations.length === 0 ? (
         <div className="card text-center py-12 text-gray-400">
@@ -91,7 +91,7 @@ export default function AdminConsultationsPage() {
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 dark:border-gray-800">
+              <tr className="border-b border-white/[0.06]">
                 <th className="text-left py-3 px-4 font-medium text-gray-500">User</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-500">Expert</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-500">Category</th>
@@ -107,28 +107,28 @@ export default function AdminConsultationsPage() {
               {consultations.map((c) => {
                 const ModeIcon = modeIcons[c.mode] || MessageSquare;
                 return (
-                  <tr key={c.id} className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <tr key={c.id} className="border-b border-white/[0.04] hover:bg-white/[0.03]">
                     <td className="py-3 px-4">
-                      <p className="font-medium">{c.isAnonymous ? 'Anonymous' : c.user?.name || c.user?.phone || '-'}</p>
+                      <p className="font-medium text-gray-200">{c.isAnonymous ? 'Anonymous' : c.user?.name || c.user?.phone || '-'}</p>
                     </td>
-                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{c.expert?.name || '-'}</td>
+                    <td className="py-3 px-4 text-gray-400">{c.expert?.name || '-'}</td>
                     <td className="py-3 px-4">
-                      <span className="text-xs px-2 py-0.5 bg-primary-50 text-primary-700 rounded-full">
+                      <span className="text-xs px-2 py-0.5 bg-primary-500/20 text-primary-400 rounded-full">
                         {c.category.replace('_', ' ')}
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-1 text-gray-600">
+                      <div className="flex items-center gap-1 text-gray-400">
                         <ModeIcon className="w-4 h-4" />
                         <span>{c.mode}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[c.status] || 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[c.status] || 'bg-gray-500/20 text-gray-400'}`}>
                         {c.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                    <td className="py-3 px-4 text-gray-400">
                       {c.duration ? (
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
@@ -136,7 +136,7 @@ export default function AdminConsultationsPage() {
                         </span>
                       ) : '-'}
                     </td>
-                    <td className="py-3 px-4 font-medium">
+                    <td className="py-3 px-4 font-medium text-gray-200">
                       {c.totalAmount ? (
                         <span className="flex items-center gap-0.5">
                           <IndianRupee className="w-3 h-3" />
@@ -144,7 +144,7 @@ export default function AdminConsultationsPage() {
                         </span>
                       ) : '-'}
                     </td>
-                    <td className="py-3 px-4 text-green-600 font-medium">
+                    <td className="py-3 px-4 text-emerald-400 font-medium">
                       {c.platformFee ? `₹${c.platformFee.toFixed(2)}` : '-'}
                     </td>
                     <td className="py-3 px-4 text-gray-500 text-xs">
@@ -157,13 +157,13 @@ export default function AdminConsultationsPage() {
           </table>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 mt-4 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between pt-4 mt-4 border-t border-white/[0.06]">
               <p className="text-sm text-gray-500">Page {page} of {totalPages}</p>
               <div className="flex gap-2">
-                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30">
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="p-2 rounded-lg hover:bg-white/[0.05] disabled:opacity-30 text-gray-400">
                   <ChevronLeft className="w-4 h-4" />
                 </button>
-                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-30">
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="p-2 rounded-lg hover:bg-white/[0.05] disabled:opacity-30 text-gray-400">
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
