@@ -28,11 +28,17 @@ export class AuthController {
 
       await this.otpService.sendSMS(phone, otp);
 
-      res.json({
+      const response: Record<string, unknown> = {
         success: true,
         message: 'OTP sent successfully',
         expiresIn: OTP_CONFIG.expiryMinutes * 60,
-      });
+      };
+
+      if (process.env.NODE_ENV !== 'production') {
+        response.devOtp = otp;
+      }
+
+      res.json(response);
     } catch (error) {
       next(error);
     }
@@ -292,13 +298,19 @@ export class AuthController {
         data: { phone: email, code: otp, type: 'LOGIN', expiresAt },
       });
 
-      await this.emailService.sendVerificationEmail(email, otp);
+      const emailSent = await this.emailService.sendVerificationEmail(email, otp);
 
-      res.json({
+      const response: Record<string, unknown> = {
         success: true,
-        message: 'OTP sent to your email',
+        message: emailSent ? 'OTP sent to your email' : 'OTP generated (email delivery pending - use displayed OTP)',
         expiresIn: OTP_CONFIG.expiryMinutes * 60,
-      });
+      };
+
+      if (process.env.NODE_ENV !== 'production') {
+        response.devOtp = otp;
+      }
+
+      res.json(response);
     } catch (error) {
       next(error);
     }
