@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [step, setStep] = useState<'input' | 'otp'>('input');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [devOtp, setDevOtp] = useState('');
   const [countdown, setCountdown] = useState(0);
 
   const startCountdown = useCallback(() => {
@@ -45,15 +46,16 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.success) {
+        if (data.devOtp) {
+          setDevOtp(data.devOtp);
+        }
         setStep('otp');
         startCountdown();
       } else {
         setError(data.message || 'Failed to send OTP');
       }
     } catch {
-      // If backend not connected, still allow UI flow for demo
-      setStep('otp');
-      startCountdown();
+      setError('Server se connect nahi ho paya. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -85,8 +87,7 @@ export default function LoginPage() {
         setError(data.message || 'Invalid OTP');
       }
     } catch {
-      // Demo mode fallback
-      window.location.href = '/dashboard';
+      setError('Server se connect nahi ho paya. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -219,6 +220,12 @@ export default function LoginPage() {
             </div>
           ) : (
             <div className="space-y-4">
+              {devOtp && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-center">
+                  <p className="text-xs text-blue-500 mb-1">Development Mode - Your OTP</p>
+                  <p className="text-2xl font-bold text-blue-600 tracking-widest">{devOtp}</p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium mb-2">Enter 6-digit OTP</label>
                 <input

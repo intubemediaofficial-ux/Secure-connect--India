@@ -5,13 +5,15 @@ import { WALLET_CONFIG, CONSULTATION_CONFIG } from '../config/constants';
 import { ApiError } from '../middleware/error.middleware';
 
 export class PaymentService {
-  private razorpay: Razorpay;
+  private razorpay: Razorpay | null = null;
 
   constructor() {
-    this.razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID || '',
-      key_secret: process.env.RAZORPAY_KEY_SECRET || '',
-    });
+    if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+      this.razorpay = new Razorpay({
+        key_id: process.env.RAZORPAY_KEY_ID,
+        key_secret: process.env.RAZORPAY_KEY_SECRET,
+      });
+    }
   }
 
   async createRechargeOrder(userId: string, amount: number) {
@@ -21,6 +23,7 @@ export class PaymentService {
 
     const wallet = await prisma.wallet.findUnique({ where: { userId } });
     if (!wallet) throw new ApiError(404, 'Wallet not found');
+    if (!this.razorpay) throw new ApiError(503, 'Payment gateway not configured');
 
     const order = await this.razorpay.orders.create({
       amount: amount * 100, // Razorpay uses paise
