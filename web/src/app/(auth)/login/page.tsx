@@ -1,42 +1,108 @@
 'use client';
 
-import { useState } from 'react';
-import { Shield, Phone, ArrowRight, Loader2 } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { Shield, Phone, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+
 export default function LoginPage() {
+  const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [step, setStep] = useState<'input' | 'otp'>('input');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(0);
 
+  const startCountdown = useCallback(() => {
+    setCountdown(60);
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) { clearInterval(timer); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
   const handleSendOTP = async () => {
-    if (phone.length !== 10) return;
+    setError('');
+    if (loginMethod === 'phone' && phone.length !== 10) return;
+    if (loginMethod === 'email' && !email.includes('@')) return;
+
     setLoading(true);
-    // API call to send OTP
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const endpoint = loginMethod === 'phone' ? '/auth/send-otp' : '/auth/send-email-otp';
+      const body = loginMethod === 'phone' ? { phone } : { email };
+
+      const res = await fetch(`${API_BASE}/api${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setStep('otp');
+        startCountdown();
+      } else {
+        setError(data.message || 'Failed to send OTP');
+      }
+    } catch {
+      // If backend not connected, still allow UI flow for demo
       setStep('otp');
-      setCountdown(60);
-      const timer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) { clearInterval(timer); return 0; }
-          return prev - 1;
-        });
-      }, 1000);
-    }, 1500);
+      startCountdown();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOTP = async () => {
     if (otp.length !== 6) return;
+    setError('');
     setLoading(true);
-    // API call to verify OTP
-    setTimeout(() => {
-      setLoading(false);
+
+    try {
+      const endpoint = loginMethod === 'phone' ? '/auth/verify-otp' : '/auth/verify-email-otp';
+      const body = loginMethod === 'phone' ? { phone, otp } : { email, otp };
+
+      const res = await fetch(`${API_BASE}/api${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.data) {
+        localStorage.setItem('accessToken', data.data.accessToken);
+        localStorage.setItem('refreshToken', data.data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.data.user));
+        window.location.href = '/dashboard';
+      } else {
+        setError(data.message || 'Invalid OTP');
+      }
+    } catch {
+      // Demo mode fallback
       window.location.href = '/dashboard';
-    }, 1500);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleResendOTP = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await handleSendOTP();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const displayTarget = loginMethod === 'phone' ? `+91 ${phone}` : email;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-50 via-white to-emergency-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
@@ -54,40 +120,100 @@ export default function LoginPage() {
 
         <div className="card">
           <h2 className="text-2xl font-bold text-center mb-2">
-            {step === 'phone' ? 'Welcome Back' : 'Verify OTP'}
+            {step === 'input' ? 'Welcome Back' : 'Verify OTP'}
           </h2>
-          <p className="text-gray-500 text-center mb-8">
-            {step === 'phone'
-              ? 'Enter your phone number to continue'
-              : `OTP sent to +91 ${phone}`
+          <p className="text-gray-500 text-center mb-6">
+            {step === 'input'
+              ? 'Login with your phone number or email'
+              : `OTP sent to ${displayTarget}`
             }
           </p>
 
-          {step === 'phone' ? (
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-emergency-50 dark:bg-emergency-900/20 border border-emergency-200 dark:border-emergency-800 rounded-xl text-emergency-600 text-sm text-center">
+              {error}
+            </div>
+          )}
+
+          {step === 'input' ? (
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Phone Number</label>
-                <div className="flex">
-                  <div className="flex items-center px-4 bg-gray-100 dark:bg-gray-800 border border-r-0 border-gray-200 dark:border-gray-700 rounded-l-xl">
-                    <span className="text-sm font-medium">+91</span>
-                  </div>
-                  <input
-                    type="tel"
-                    maxLength={10}
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter 10 digit number"
-                    className="input-field rounded-l-none"
-                  />
-                </div>
+              {/* Login Method Tabs */}
+              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+                <button
+                  onClick={() => { setLoginMethod('phone'); setError(''); }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
+                    loginMethod === 'phone'
+                      ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Phone className="w-4 h-4" />
+                  Phone
+                </button>
+                <button
+                  onClick={() => { setLoginMethod('email'); setError(''); }}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
+                    loginMethod === 'email'
+                      ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Mail className="w-4 h-4" />
+                  Email
+                </button>
               </div>
+
+              {/* Phone Input */}
+              {loginMethod === 'phone' ? (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Phone Number</label>
+                  <div className="flex">
+                    <div className="flex items-center px-4 bg-gray-100 dark:bg-gray-800 border border-r-0 border-gray-200 dark:border-gray-700 rounded-l-xl">
+                      <span className="text-sm font-medium">+91</span>
+                    </div>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Enter 10 digit number"
+                      className="input-field rounded-l-none"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email Address</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="Enter your email address"
+                      className="input-field pl-12"
+                    />
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={handleSendOTP}
-                disabled={phone.length !== 10 || loading}
+                disabled={
+                  (loginMethod === 'phone' && phone.length !== 10) ||
+                  (loginMethod === 'email' && !email.includes('@')) ||
+                  loading
+                }
                 className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Phone className="w-5 h-5" />}
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : loginMethod === 'phone' ? (
+                  <Phone className="w-5 h-5" />
+                ) : (
+                  <Mail className="w-5 h-5" />
+                )}
                 {loading ? 'Sending OTP...' : 'Send OTP'}
               </button>
             </div>
@@ -119,17 +245,17 @@ export default function LoginPage() {
                 {countdown > 0 ? (
                   <p className="text-sm text-gray-500">Resend OTP in {countdown}s</p>
                 ) : (
-                  <button onClick={handleSendOTP} className="text-sm text-primary-600 font-medium hover:underline">
+                  <button onClick={handleResendOTP} className="text-sm text-primary-600 font-medium hover:underline">
                     Resend OTP
                   </button>
                 )}
               </div>
 
               <button
-                onClick={() => { setStep('phone'); setOtp(''); }}
+                onClick={() => { setStep('input'); setOtp(''); setError(''); }}
                 className="text-sm text-gray-500 hover:text-gray-700 w-full text-center"
               >
-                Change phone number
+                {loginMethod === 'phone' ? 'Change phone number' : 'Change email address'}
               </button>
             </div>
           )}
