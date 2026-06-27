@@ -1,0 +1,585 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER MANAGEMENT
+// ==========================================
+
+model User {
+  id              String    @id @default(uuid())
+  phone           String    @unique
+  email           String?   @unique
+  name            String?
+  gender          Gender?
+  dateOfBirth     DateTime?
+  avatar          String?
+  isVerified      Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  role            UserRole  @default(USER)
+  language        String    @default("hi")
+  anonymousId     String?   @unique @default(uuid())
+  lastLocation    Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  wallet            Wallet?
+  emergencyContacts EmergencyContact[]
+  sosAlerts         SOSAlert[]
+  consultations     Consultation[]     @relation("UserConsultations")
+  chatMessages      ChatMessage[]      @relation("UserMessages")
+  ratings           Rating[]
+  notifications     Notification[]
+  trustedLocations  TrustedLocation[]
+  safetyCheckins    SafetyCheckin[]
+  favoriteExperts   FavoriteExpert[]
+  otpCodes          OTPCode[]
+  sessions          UserSession[]
+
+  @@map("users")
+}
+
+model Expert {
+  id              String         @id @default(uuid())
+  phone           String         @unique
+  email           String         @unique
+  name            String
+  gender          Gender
+  avatar          String?
+  bio             String?
+  qualification   String
+  specialization  String[]
+  experience      Int
+  category        ExpertCategory
+  isVerified      Boolean        @default(false)
+  isActive        Boolean        @default(true)
+  isOnline        Boolean        @default(false)
+  rating          Float          @default(0)
+  totalRatings    Int            @default(0)
+  totalConsultations Int         @default(0)
+  perMinuteRate   Float
+  languages       String[]       @default(["hi", "en"])
+  documents       String[]
+  bankAccount     String?
+  ifscCode        String?
+  upiId           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  wallet          ExpertWallet?
+  consultations   Consultation[] @relation("ExpertConsultations")
+  chatMessages    ChatMessage[]  @relation("ExpertMessages")
+  ratings         Rating[]
+  availability    ExpertAvailability[]
+  favoriteBy      FavoriteExpert[]
+  earnings        Earning[]
+
+  @@map("experts")
+}
+
+model Admin {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String
+  role      AdminRole @default(MODERATOR)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("admins")
+}
+
+// ==========================================
+// AUTHENTICATION
+// ==========================================
+
+model OTPCode {
+  id        String   @id @default(uuid())
+  userId    String?
+  phone     String
+  code      String
+  type      OTPType  @default(LOGIN)
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("otp_codes")
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String
+  token        String   @unique
+  deviceInfo   String?
+  ipAddress    String?
+  platform     String?
+  isActive     Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_sessions")
+}
+
+// ==========================================
+// EMERGENCY / SOS SYSTEM
+// ==========================================
+
+model EmergencyContact {
+  id           String   @id @default(uuid())
+  userId       String
+  name         String
+  phone        String
+  relationship String
+  isPrimary    Boolean  @default(false)
+  isVerified   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sosAlerts SOSAlert[] @relation("ContactAlerts")
+
+  @@map("emergency_contacts")
+}
+
+model SOSAlert {
+  id            String      @id @default(uuid())
+  userId        String
+  triggerMethod SOSTrigger
+  status        SOSStatus   @default(ACTIVE)
+  latitude      Float
+  longitude     Float
+  address       String?
+  audioUrls     String[]
+  videoUrls     String[]
+  photoUrls     String[]
+  notes         String?
+  resolvedAt    DateTime?
+  escalatedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  user             User               @relation(fields: [userId], references: [id])
+  alertedContacts  EmergencyContact[] @relation("ContactAlerts")
+  locationHistory  LocationHistory[]
+  nearbyAlerts     NearbyUserAlert[]
+
+  @@map("sos_alerts")
+}
+
+model LocationHistory {
+  id         String   @id @default(uuid())
+  sosAlertId String
+  latitude   Float
+  longitude  Float
+  accuracy   Float?
+  speed      Float?
+  bearing    Float?
+  altitude   Float?
+  timestamp  DateTime @default(now())
+
+  sosAlert SOSAlert @relation(fields: [sosAlertId], references: [id], onDelete: Cascade)
+
+  @@map("location_history")
+}
+
+model NearbyUserAlert {
+  id         String   @id @default(uuid())
+  sosAlertId String
+  userId     String
+  distance   Float
+  notifiedAt DateTime @default(now())
+  responded  Boolean  @default(false)
+  respondedAt DateTime?
+
+  sosAlert SOSAlert @relation(fields: [sosAlertId], references: [id], onDelete: Cascade)
+
+  @@map("nearby_user_alerts")
+}
+
+model TrustedLocation {
+  id        String   @id @default(uuid())
+  userId    String
+  name      String
+  latitude  Float
+  longitude Float
+  radius    Float    @default(500)
+  type      String   @default("home")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("trusted_locations")
+}
+
+model SafetyCheckin {
+  id          String        @id @default(uuid())
+  userId      String
+  scheduledAt DateTime
+  respondedAt DateTime?
+  status      CheckinStatus @default(PENDING)
+  message     String?
+  createdAt   DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("safety_checkins")
+}
+
+// ==========================================
+// CONSULTATION SYSTEM
+// ==========================================
+
+model Consultation {
+  id            String             @id @default(uuid())
+  userId        String
+  expertId      String
+  category      ExpertCategory
+  mode          ConsultationMode
+  status        ConsultationStatus @default(PENDING)
+  startTime     DateTime?
+  endTime       DateTime?
+  duration      Int?
+  totalAmount   Float?
+  perMinuteRate Float
+  isAnonymous   Boolean            @default(false)
+  userNote      String?
+  expertNote    String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  user     User          @relation("UserConsultations", fields: [userId], references: [id])
+  expert   Expert        @relation("ExpertConsultations", fields: [expertId], references: [id])
+  messages ChatMessage[]
+  rating   Rating?
+  payment  Payment?
+
+  @@map("consultations")
+}
+
+model ChatMessage {
+  id             String      @id @default(uuid())
+  consultationId String
+  senderId       String
+  senderType     SenderType
+  content        String
+  messageType    MessageType @default(TEXT)
+  mediaUrl       String?
+  isRead         Boolean     @default(false)
+  isDeleted      Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+
+  consultation Consultation @relation(fields: [consultationId], references: [id], onDelete: Cascade)
+  userSender   User?        @relation("UserMessages", fields: [senderId], references: [id], map: "chat_user_fk")
+  expertSender Expert?      @relation("ExpertMessages", fields: [senderId], references: [id], map: "chat_expert_fk")
+
+  @@map("chat_messages")
+}
+
+model Rating {
+  id             String   @id @default(uuid())
+  userId         String
+  expertId       String
+  consultationId String   @unique
+  rating         Int
+  review         String?
+  isAnonymous    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id])
+  expert       Expert       @relation(fields: [expertId], references: [id])
+  consultation Consultation @relation(fields: [consultationId], references: [id])
+
+  @@map("ratings")
+}
+
+model ExpertAvailability {
+  id        String  @id @default(uuid())
+  expertId  String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  isActive  Boolean @default(true)
+
+  expert Expert @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@map("expert_availability")
+}
+
+model FavoriteExpert {
+  id        String   @id @default(uuid())
+  userId    String
+  expertId  String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expert Expert @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, expertId])
+  @@map("favorite_experts")
+}
+
+// ==========================================
+// WALLET & PAYMENTS
+// ==========================================
+
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   Float    @default(0)
+  currency  String   @default("INR")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@map("wallets")
+}
+
+model ExpertWallet {
+  id            String   @id @default(uuid())
+  expertId      String   @unique
+  balance       Float    @default(0)
+  totalEarnings Float    @default(0)
+  pendingPayout Float    @default(0)
+  currency      String   @default("INR")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  expert Expert @relation(fields: [expertId], references: [id], onDelete: Cascade)
+
+  @@map("expert_wallets")
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  walletId    String
+  amount      Float
+  type        TransactionType
+  status      PaymentStatus   @default(PENDING)
+  description String?
+  referenceId String?
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@map("transactions")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  consultationId    String        @unique
+  amount            Float
+  platformFee       Float         @default(0)
+  expertAmount      Float         @default(0)
+  status            PaymentStatus @default(PENDING)
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+  method            String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  consultation Consultation @relation(fields: [consultationId], references: [id])
+
+  @@map("payments")
+}
+
+model Earning {
+  id        String   @id @default(uuid())
+  expertId  String
+  amount    Float
+  type      String
+  status    String   @default("pending")
+  paidAt    DateTime?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  expert Expert @relation(fields: [expertId], references: [id])
+
+  @@map("earnings")
+}
+
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  body      String
+  type      NotificationType
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ==========================================
+// APP SETTINGS
+// ==========================================
+
+model AppSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum UserRole {
+  USER
+  VOLUNTEER
+  ADMIN
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  MODERATOR
+  SUPPORT
+}
+
+enum ExpertCategory {
+  RELATIONSHIP
+  MARRIAGE
+  FAMILY
+  BREAKUP
+  LONELINESS
+  PERSONAL_LIFE
+  EMOTIONAL_STRESS
+  PSYCHOLOGY
+  MENTAL_WELLNESS
+  ANXIETY
+  STRESS
+  WOMENS_HEALTH
+  PERIOD_PROBLEMS
+  PCOS
+  PREGNANCY
+  HYGIENE
+}
+
+enum OTPType {
+  LOGIN
+  VERIFICATION
+  PASSWORD_RESET
+}
+
+enum SOSTrigger {
+  BUTTON
+  POWER_BUTTON
+  VOICE
+  SHAKE
+  SCHEDULED
+  AUTO
+}
+
+enum SOSStatus {
+  ACTIVE
+  RESOLVED
+  FALSE_ALARM
+  ESCALATED
+}
+
+enum CheckinStatus {
+  PENDING
+  SAFE
+  MISSED
+  ALERT_TRIGGERED
+}
+
+enum ConsultationMode {
+  CHAT
+  VOICE_CALL
+  VIDEO_CALL
+}
+
+enum ConsultationStatus {
+  PENDING
+  ACCEPTED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  MISSED
+  REJECTED
+}
+
+enum SenderType {
+  USER
+  EXPERT
+  SYSTEM
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  VIDEO
+  FILE
+  LOCATION
+  SYSTEM
+}
+
+enum TransactionType {
+  RECHARGE
+  CONSULTATION_DEBIT
+  CONSULTATION_CREDIT
+  REFUND
+  BONUS
+  WITHDRAWAL
+  PLATFORM_FEE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum NotificationType {
+  SOS_ALERT
+  SOS_RESOLVED
+  CONSULTATION_REQUEST
+  CONSULTATION_ACCEPTED
+  CONSULTATION_START
+  CONSULTATION_END
+  CONSULTATION_MISSED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  WALLET_RECHARGE
+  WALLET_LOW
+  SAFETY_CHECKIN
+  SAFETY_MISSED
+  EXPERT_VERIFIED
+  SYSTEM
+  PROMOTION
+}
