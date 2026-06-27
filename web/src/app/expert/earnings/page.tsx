@@ -1,55 +1,35 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { IndianRupee, TrendingUp, ArrowUpRight, ArrowDownRight, Loader2, Wallet, Send } from 'lucide-react';
+import { IndianRupee, TrendingUp, ArrowDownToLine, Wallet, Loader2, CheckCircle, Info } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
-interface WalletData {
-  balance: number;
-  totalEarnings: number;
-}
-
-interface Earning {
-  id: string;
-  type: string;
-  amount: number;
-  description: string | null;
-  createdAt: string;
-}
-
 export default function ExpertEarningsPage() {
-  const [wallet, setWallet] = useState<WalletData | null>(null);
+  const [balance, setBalance] = useState(0);
+  const [totalEarnings, setTotalEarnings] = useState(0);
   const [loading, setLoading] = useState(true);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawing, setWithdrawing] = useState(false);
   const [message, setMessage] = useState('');
 
-  useEffect(() => { fetchWallet(); }, []);
-
-  const fetchWallet = async () => {
-    try {
-      const token = localStorage.getItem('expertToken');
-      const res = await fetch(`${API_BASE}/api/experts/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && data.data?.wallet) {
-        setWallet(data.data.wallet);
-      }
-    } catch { /* ignore */ } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchEarnings = async () => {
+      try {
+        const token = localStorage.getItem('expertToken');
+        const res = await fetch(`${API_BASE}/api/experts/dashboard`, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        if (data.success) {
+          setBalance(data.data.stats?.balance || 0);
+          setTotalEarnings(data.data.stats?.totalEarnings || 0);
+        }
+      } catch { /* ignore */ } finally { setLoading(false); }
+    };
+    fetchEarnings();
+  }, []);
 
   const handleWithdraw = async () => {
-    const amt = parseFloat(withdrawAmount);
-    if (!amt || amt <= 0) return;
-    if (wallet && amt > wallet.balance) {
-      setMessage('Insufficient balance');
-      return;
-    }
-
+    if (!withdrawAmount || Number(withdrawAmount) <= 0) return;
     setWithdrawing(true);
     setMessage('');
     try {
@@ -57,127 +37,108 @@ export default function ExpertEarningsPage() {
       const res = await fetch(`${API_BASE}/api/experts/withdraw`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amt }),
+        body: JSON.stringify({ amount: Number(withdrawAmount) }),
       });
       const data = await res.json();
       if (data.success) {
         setMessage('Withdrawal request submitted!');
         setWithdrawAmount('');
-        fetchWallet();
+        setBalance(prev => prev - Number(withdrawAmount));
       } else {
         setMessage(data.message || 'Withdrawal failed');
       }
-    } catch {
-      setMessage('Server error. Try again later.');
-    } finally {
-      setWithdrawing(false);
-    }
+    } catch { setMessage('Server error'); } finally { setWithdrawing(false); }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" /></div>;
 
   return (
-    <div className="space-y-6">
-      {/* Wallet Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="card bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-0">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <Wallet className="w-6 h-6" />
+    <div className="max-w-3xl space-y-6">
+      {/* Wallet & Earnings Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="stat-card bg-gradient-to-br from-emerald-600 to-emerald-800 shadow-xl shadow-emerald-500/20">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-white/10 rounded-xl">
+              <Wallet className="w-6 h-6 text-emerald-300" />
             </div>
-            <p className="text-emerald-100">Available Balance</p>
           </div>
-          <p className="text-3xl font-bold">₹{(wallet?.balance || 0).toFixed(2)}</p>
+          <p className="text-sm text-emerald-200">Wallet Balance</p>
+          <p className="text-3xl font-bold text-white mt-1">₹{balance.toFixed(2)}</p>
         </div>
-
-        <div className="card bg-gradient-to-br from-purple-500 to-indigo-600 text-white border-0">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-white/20 rounded-lg">
-              <TrendingUp className="w-6 h-6" />
+        <div className="stat-card bg-gradient-to-br from-purple-600 to-purple-800 shadow-xl shadow-purple-500/20">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="p-2.5 bg-white/10 rounded-xl">
+              <TrendingUp className="w-6 h-6 text-purple-300" />
             </div>
-            <p className="text-purple-100">Total Earnings</p>
           </div>
-          <p className="text-3xl font-bold">₹{(wallet?.totalEarnings || 0).toLocaleString()}</p>
+          <p className="text-sm text-purple-200">Total Earnings</p>
+          <p className="text-3xl font-bold text-white mt-1">₹{totalEarnings.toLocaleString()}</p>
         </div>
       </div>
 
-      {/* How Earnings Work */}
+      {/* Revenue Split */}
       <div className="card">
-        <h3 className="font-semibold mb-3">How Earnings Work</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-center">
-            <p className="text-2xl font-bold text-blue-600">80%</p>
-            <p className="text-xs text-blue-600">You Earn</p>
+        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+          <Info className="w-5 h-5 text-primary-400" />
+          Revenue Split
+        </h3>
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Expert Share</span>
+              <span className="text-emerald-400 font-bold">80%</span>
+            </div>
+            <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full" style={{ width: '80%' }} />
+            </div>
           </div>
-          <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl text-center">
-            <p className="text-2xl font-bold text-amber-600">20%</p>
-            <p className="text-xs text-amber-600">Platform Fee</p>
-          </div>
-          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl text-center">
-            <p className="text-2xl font-bold text-green-600">Per Min</p>
-            <p className="text-xs text-green-600">Billing Method</p>
+          <div className="w-px h-12 bg-white/[0.08]" />
+          <div className="flex-1">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-400">Platform Fee</span>
+              <span className="text-amber-400 font-bold">20%</span>
+            </div>
+            <div className="w-full h-3 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-amber-500 to-amber-400 rounded-full" style={{ width: '20%' }} />
+            </div>
           </div>
         </div>
-        <p className="text-sm text-gray-500 mt-3">
-          Example: 10 min consultation at ₹15/min = ₹150 total. You earn ₹120, platform gets ₹30.
-        </p>
+        <p className="text-xs text-gray-600 mt-3">Example: If user pays ₹100, you get ₹80, platform keeps ₹20</p>
       </div>
 
-      {/* Withdraw */}
+      {/* Withdrawal */}
       <div className="card">
-        <h3 className="font-semibold mb-4 flex items-center gap-2">
-          <Send className="w-5 h-5 text-emerald-500" />
-          Request Withdrawal
+        <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+          <ArrowDownToLine className="w-5 h-5 text-emerald-400" />
+          Withdraw Earnings
         </h3>
 
         {message && (
-          <div className={`mb-4 p-3 rounded-xl text-sm text-center ${
-            message.includes('submitted') ? 'bg-green-50 text-green-600 border border-green-200' : 'bg-red-50 text-red-600 border border-red-200'
-          }`}>
-            {message}
+          <div className="mb-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" /> {message}
           </div>
         )}
 
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input
               type="number"
-              min={100}
               value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              placeholder="Enter amount (min ₹500)"
-              className="input-field pl-9"
+              onChange={e => setWithdrawAmount(e.target.value)}
+              placeholder="Enter amount"
+              className="input-field pl-10"
+              min="0"
+              max={balance}
             />
           </div>
-          <button
-            onClick={handleWithdraw}
-            disabled={withdrawing || !withdrawAmount}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 rounded-xl transition flex items-center gap-2 disabled:opacity-50"
-          >
-            {withdrawing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          <button onClick={handleWithdraw} disabled={withdrawing || !withdrawAmount || Number(withdrawAmount) <= 0}
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-medium px-6 rounded-xl transition-all duration-300 flex items-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50">
+            {withdrawing ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowDownToLine className="w-5 h-5" />}
             Withdraw
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-2">
-          Withdrawals are processed to your UPI/Bank account within 2-3 business days.
-          Make sure your payment details are updated in Profile.
-        </p>
-      </div>
-
-      {/* Earnings Breakdown */}
-      <div className="card">
-        <h3 className="font-semibold mb-4">Recent Earnings</h3>
-        <div className="text-center py-8 text-gray-400">
-          <IndianRupee className="w-10 h-10 mx-auto mb-2 opacity-50" />
-          <p>Earnings will appear here after consultations</p>
-        </div>
+        <p className="text-xs text-gray-600 mt-2">Minimum withdrawal: ₹100. Processing time: 24-48 hours.</p>
       </div>
     </div>
   );

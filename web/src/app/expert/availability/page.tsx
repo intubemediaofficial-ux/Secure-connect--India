@@ -1,156 +1,109 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Save, Loader2, Clock } from 'lucide-react';
+import { Save, Loader2, Calendar, Clock, CheckCircle } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
-
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-interface DaySlot {
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  isActive: boolean;
-}
+interface Slot { day: string; isActive: boolean; startTime: string; endTime: string; }
 
 export default function ExpertAvailabilityPage() {
-  const [slots, setSlots] = useState<DaySlot[]>(
-    DAYS.map((_, i) => ({ dayOfWeek: i + 1, startTime: '09:00', endTime: '18:00', isActive: false }))
-  );
+  const [slots, setSlots] = useState<Slot[]>(DAYS.map(d => ({ day: d, isActive: false, startTime: '09:00', endTime: '17:00' })));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => { fetchAvailability(); }, []);
-
-  const fetchAvailability = async () => {
-    try {
-      const token = localStorage.getItem('expertToken');
-      const res = await fetch(`${API_BASE}/api/experts/availability`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (data.success && data.data?.length > 0) {
-        setSlots(prev => prev.map(s => {
-          const match = data.data.find((d: DaySlot) => d.dayOfWeek === s.dayOfWeek);
-          return match ? { ...s, startTime: match.startTime, endTime: match.endTime, isActive: match.isActive } : s;
-        }));
-      }
-    } catch { /* ignore */ } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      try {
+        const token = localStorage.getItem('expertToken');
+        const res = await fetch(`${API_BASE}/api/experts/availability`, { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        if (data.success && data.data?.length > 0) {
+          setSlots(prev => prev.map(s => {
+            const found = data.data.find((a: Slot) => a.day === s.day);
+            return found ? { ...s, ...found, isActive: true } : s;
+          }));
+        }
+      } catch { /* ignore */ } finally { setLoading(false); }
+    };
+    fetchAvailability();
+  }, []);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const token = localStorage.getItem('expertToken');
-      const res = await fetch(`${API_BASE}/api/experts/availability`, {
+      await fetch(`${API_BASE}/api/experts/availability`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ availability: slots.filter(s => s.isActive) }),
       });
-      const data = await res.json();
-      if (data.success) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
-      }
-    } catch { /* ignore */ } finally {
-      setSaving(false);
-    }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch { /* ignore */ } finally { setSaving(false); }
   };
 
-  const toggleDay = (index: number) => {
-    setSlots(prev => prev.map((s, i) => i === index ? { ...s, isActive: !s.isActive } : s));
-  };
+  const toggleDay = (day: string) => setSlots(prev => prev.map(s => s.day === day ? { ...s, isActive: !s.isActive } : s));
+  const updateTime = (day: string, field: 'startTime' | 'endTime', value: string) => setSlots(prev => prev.map(s => s.day === day ? { ...s, [field]: value } : s));
 
-  const updateTime = (index: number, field: 'startTime' | 'endTime', value: string) => {
-    setSlots(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full" /></div>;
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       {saved && (
-        <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl text-green-600 text-sm text-center">
-          Availability saved!
+        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm text-center flex items-center justify-center gap-2">
+          <CheckCircle className="w-4 h-4" /> Availability saved successfully!
         </div>
       )}
 
       <div className="card">
-        <div className="flex items-center gap-2 mb-4">
-          <Clock className="w-5 h-5 text-emerald-500" />
-          <h3 className="font-semibold">Weekly Schedule</h3>
-        </div>
-        <p className="text-sm text-gray-500 mb-6">
-          Set your available days and timings. Users will only see you online during these hours.
-        </p>
+        <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-emerald-400" />
+          Weekly Schedule
+        </h3>
+        <p className="text-gray-500 text-sm mb-6">Set your available days and hours for consultations</p>
 
         <div className="space-y-3">
-          {DAYS.map((day, index) => (
-            <div
-              key={day}
-              className={`flex items-center gap-4 p-4 rounded-xl border transition ${
-                slots[index].isActive
-                  ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
-                  : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-              }`}
-            >
-              {/* Toggle */}
+          {slots.map(slot => (
+            <div key={slot.day} className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${
+              slot.isActive
+                ? 'bg-emerald-500/10 border-emerald-500/20'
+                : 'bg-white/[0.02] border-white/[0.06]'
+            }`}>
               <button
-                onClick={() => toggleDay(index)}
-                className={`relative w-12 h-6 rounded-full transition flex-shrink-0 ${
-                  slots[index].isActive ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                onClick={() => toggleDay(slot.day)}
+                className={`w-14 h-7 rounded-full transition-all duration-300 relative ${
+                  slot.isActive ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : 'bg-gray-700'
                 }`}
               >
-                <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                  slots[index].isActive ? 'translate-x-6' : 'translate-x-0.5'
+                <span className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-all duration-300 ${
+                  slot.isActive ? 'left-7' : 'left-0.5'
                 }`} />
               </button>
-
-              {/* Day name */}
-              <span className={`w-24 text-sm font-medium ${slots[index].isActive ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-400'}`}>
-                {day}
+              <span className={`w-24 font-medium text-sm ${slot.isActive ? 'text-emerald-400' : 'text-gray-500'}`}>
+                {slot.day}
               </span>
-
-              {/* Time inputs */}
-              {slots[index].isActive ? (
+              {slot.isActive && (
                 <div className="flex items-center gap-2 flex-1">
-                  <input
-                    type="time"
-                    value={slots[index].startTime}
-                    onChange={(e) => updateTime(index, 'startTime', e.target.value)}
-                    className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
-                  />
-                  <span className="text-gray-400 text-sm">to</span>
-                  <input
-                    type="time"
-                    value={slots[index].endTime}
-                    onChange={(e) => updateTime(index, 'endTime', e.target.value)}
-                    className="px-3 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-2 focus:ring-emerald-400 outline-none"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4 text-gray-500" />
+                    <input type="time" value={slot.startTime} onChange={e => updateTime(slot.day, 'startTime', e.target.value)}
+                      className="bg-white/[0.06] border border-white/[0.12] rounded-lg px-3 py-1.5 text-sm text-gray-200 outline-none focus:ring-2 focus:ring-emerald-500/50" />
+                  </div>
+                  <span className="text-gray-600">to</span>
+                  <input type="time" value={slot.endTime} onChange={e => updateTime(slot.day, 'endTime', e.target.value)}
+                    className="bg-white/[0.06] border border-white/[0.12] rounded-lg px-3 py-1.5 text-sm text-gray-200 outline-none focus:ring-2 focus:ring-emerald-500/50" />
                 </div>
-              ) : (
-                <span className="text-sm text-gray-400 flex-1">Not available</span>
               )}
             </div>
           ))}
         </div>
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl transition flex items-center gap-2 disabled:opacity-50"
-      >
+      <button onClick={handleSave} disabled={saving}
+        className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-medium py-3.5 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 disabled:opacity-50">
         {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
         {saving ? 'Saving...' : 'Save Schedule'}
       </button>

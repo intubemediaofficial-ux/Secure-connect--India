@@ -31,24 +31,18 @@ export default function LoginPage() {
     setError('');
     if (loginMethod === 'phone' && phone.length !== 10) return;
     if (loginMethod === 'email' && !email.includes('@')) return;
-
     setLoading(true);
     try {
       const endpoint = loginMethod === 'phone' ? '/auth/send-otp' : '/auth/send-email-otp';
       const body = loginMethod === 'phone' ? { phone } : { email };
-
       const res = await fetch(`${API_BASE}/api${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-
       const data = await res.json();
-
       if (data.success) {
-        if (data.devOtp) {
-          setDevOtp(data.devOtp);
-        }
+        if (data.devOtp) setDevOtp(data.devOtp);
         setStep('otp');
         startCountdown();
       } else {
@@ -65,19 +59,15 @@ export default function LoginPage() {
     if (otp.length !== 6) return;
     setError('');
     setLoading(true);
-
     try {
       const endpoint = loginMethod === 'phone' ? '/auth/verify-otp' : '/auth/verify-email-otp';
       const body = loginMethod === 'phone' ? { phone, otp } : { email, otp };
-
       const res = await fetch(`${API_BASE}/api${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-
       const data = await res.json();
-
       if (data.success && data.data) {
         localStorage.setItem('accessToken', data.data.accessToken);
         localStorage.setItem('refreshToken', data.data.refreshToken);
@@ -106,33 +96,31 @@ export default function LoginPage() {
   const displayTarget = loginMethod === 'phone' ? `+91 ${phone}` : email;
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-primary-50 via-white to-emergency-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-950" style={{ backgroundImage: 'radial-gradient(at 30% 20%, rgba(76, 110, 245, 0.1) 0%, transparent 50%), radial-gradient(at 70% 80%, rgba(239, 68, 68, 0.06) 0%, transparent 50%)' }}>
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <Shield className="w-10 h-10 text-primary-600" />
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent">
-              SecureConnect
-            </span>
+          <Link href="/" className="inline-flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/30">
+              <Shield className="w-7 h-7 text-white" />
+            </div>
+            <div className="text-left">
+              <span className="text-2xl font-bold gradient-text">SecureConnect</span>
+              <p className="text-xs text-gray-500">Your Safety, Our Priority</p>
+            </div>
           </Link>
-          <p className="text-gray-500 mt-2">Your Safety, Our Priority</p>
         </div>
 
-        <div className="card">
-          <h2 className="text-2xl font-bold text-center mb-2">
+        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-8 shadow-2xl">
+          <h2 className="text-2xl font-bold text-center text-white mb-2">
             {step === 'input' ? 'Welcome Back' : 'Verify OTP'}
           </h2>
           <p className="text-gray-500 text-center mb-6">
-            {step === 'input'
-              ? 'Login with your phone number or email'
-              : `OTP sent to ${displayTarget}`
-            }
+            {step === 'input' ? 'Login with your phone number or email' : `OTP sent to ${displayTarget}`}
           </p>
 
-          {/* Error Message */}
           {error && (
-            <div className="mb-4 p-3 bg-emergency-50 dark:bg-emergency-900/20 border border-emergency-200 dark:border-emergency-800 rounded-xl text-emergency-600 text-sm text-center">
+            <div className="mb-4 p-3 bg-emergency-500/10 border border-emergency-500/20 rounded-xl text-emergency-400 text-sm text-center">
               {error}
             </div>
           )}
@@ -140,13 +128,13 @@ export default function LoginPage() {
           {step === 'input' ? (
             <div className="space-y-4">
               {/* Login Method Tabs */}
-              <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+              <div className="flex bg-white/[0.05] rounded-xl p-1 border border-white/[0.08]">
                 <button
                   onClick={() => { setLoginMethod('phone'); setError(''); }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
                     loginMethod === 'phone'
-                      ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-gray-500 hover:text-gray-300'
                   }`}
                 >
                   <Phone className="w-4 h-4" />
@@ -154,10 +142,10 @@ export default function LoginPage() {
                 </button>
                 <button
                   onClick={() => { setLoginMethod('email'); setError(''); }}
-                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${
                     loginMethod === 'email'
-                      ? 'bg-white dark:bg-gray-700 text-primary-600 shadow-sm'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                      : 'text-gray-500 hover:text-gray-300'
                   }`}
                 >
                   <Mail className="w-4 h-4" />
@@ -165,13 +153,12 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              {/* Phone Input */}
               {loginMethod === 'phone' ? (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Phone Number</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Phone Number</label>
                   <div className="flex">
-                    <div className="flex items-center px-4 bg-gray-100 dark:bg-gray-800 border border-r-0 border-gray-200 dark:border-gray-700 rounded-l-xl">
-                      <span className="text-sm font-medium">+91</span>
+                    <div className="flex items-center px-4 bg-white/[0.06] border border-white/[0.12] border-r-0 rounded-l-xl">
+                      <span className="text-sm font-medium text-gray-400">+91</span>
                     </div>
                     <input
                       type="tel"
@@ -185,9 +172,9 @@ export default function LoginPage() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium mb-2">Email Address</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                     <input
                       type="email"
                       value={email}
@@ -201,33 +188,23 @@ export default function LoginPage() {
 
               <button
                 onClick={handleSendOTP}
-                disabled={
-                  (loginMethod === 'phone' && phone.length !== 10) ||
-                  (loginMethod === 'email' && !email.includes('@')) ||
-                  loading
-                }
-                className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={(loginMethod === 'phone' && phone.length !== 10) || (loginMethod === 'email' && !email.includes('@')) || loading}
+                className="w-full bg-gradient-to-r from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 text-white font-medium py-3.5 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50"
               >
-                {loading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : loginMethod === 'phone' ? (
-                  <Phone className="w-5 h-5" />
-                ) : (
-                  <Mail className="w-5 h-5" />
-                )}
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : loginMethod === 'phone' ? <Phone className="w-5 h-5" /> : <Mail className="w-5 h-5" />}
                 {loading ? 'Sending OTP...' : 'Send OTP'}
               </button>
             </div>
           ) : (
             <div className="space-y-4">
               {devOtp && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl text-center">
-                  <p className="text-xs text-blue-500 mb-1">Development Mode - Your OTP</p>
-                  <p className="text-2xl font-bold text-blue-600 tracking-widest">{devOtp}</p>
+                <div className="p-3 bg-primary-500/10 border border-primary-500/20 rounded-xl text-center">
+                  <p className="text-xs text-primary-400 mb-1">Development Mode - Your OTP</p>
+                  <p className="text-2xl font-bold text-primary-300 tracking-widest">{devOtp}</p>
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium mb-2">Enter 6-digit OTP</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Enter 6-digit OTP</label>
                 <input
                   type="text"
                   maxLength={6}
@@ -242,7 +219,7 @@ export default function LoginPage() {
               <button
                 onClick={handleVerifyOTP}
                 disabled={otp.length !== 6 || loading}
-                className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-gradient-to-r from-primary-500 to-primary-700 hover:from-primary-600 hover:to-primary-800 text-white font-medium py-3.5 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-primary-500/30"
               >
                 {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ArrowRight className="w-5 h-5" />}
                 {loading ? 'Verifying...' : 'Verify & Login'}
@@ -252,7 +229,7 @@ export default function LoginPage() {
                 {countdown > 0 ? (
                   <p className="text-sm text-gray-500">Resend OTP in {countdown}s</p>
                 ) : (
-                  <button onClick={handleResendOTP} className="text-sm text-primary-600 font-medium hover:underline">
+                  <button onClick={handleResendOTP} className="text-sm text-primary-400 font-medium hover:text-primary-300">
                     Resend OTP
                   </button>
                 )}
@@ -260,24 +237,23 @@ export default function LoginPage() {
 
               <button
                 onClick={() => { setStep('input'); setOtp(''); setError(''); }}
-                className="text-sm text-gray-500 hover:text-gray-700 w-full text-center"
+                className="text-sm text-gray-500 hover:text-gray-300 w-full text-center transition"
               >
                 {loginMethod === 'phone' ? 'Change phone number' : 'Change email address'}
               </button>
             </div>
           )}
 
-          <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
-            <p className="text-xs text-gray-400 text-center">
+          <div className="mt-6 pt-6 border-t border-white/[0.06]">
+            <p className="text-xs text-gray-600 text-center">
               By continuing, you agree to our Terms of Service and Privacy Policy.
               Your data is encrypted and secure.
             </p>
           </div>
         </div>
 
-        {/* Expert Login */}
         <div className="mt-4 text-center">
-          <Link href="/expert-login" className="text-sm text-primary-600 hover:underline">
+          <Link href="/expert-login" className="text-sm text-primary-400 hover:text-primary-300 transition">
             Expert? Login here
           </Link>
         </div>
