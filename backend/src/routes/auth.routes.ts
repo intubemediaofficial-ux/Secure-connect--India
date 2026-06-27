@@ -8,6 +8,8 @@ const controller = new AuthController();
 router.post('/send-otp', controller.sendOTP);
 router.post('/verify-otp', controller.verifyOTP);
 router.post('/resend-otp', controller.resendOTP);
+router.post('/send-email-otp', controller.sendEmailOTP);
+router.post('/verify-email-otp', controller.verifyEmailOTP);
 router.post('/verify-email', authenticate, controller.verifyEmail);
 router.post('/send-email-verification', authenticate, controller.sendEmailVerification);
 router.post('/refresh-token', controller.refreshToken);

@@ -277,6 +277,113 @@ export class AuthController {
     }
   };
 
+  sendEmailOTP = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email } = req.body;
+
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new ApiError(400, 'Valid email address required');
+      }
+
+      const otp = this.otpService.generateOTP();
+      const expiresAt = new Date(Date.now() + OTP_CONFIG.expiryMinutes * 60 * 1000);
+
+      await prisma.oTPCode.create({
+        data: { phone: email, code: otp, type: 'LOGIN', expiresAt },
+      });
+
+      await this.emailService.sendVerificationEmail(email, otp);
+
+      res.json({
+        success: true,
+        message: 'OTP sent to your email',
+        expiresIn: OTP_CONFIG.expiryMinutes * 60,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  verifyEmailOTP = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, otp } = req.body;
+
+      if (!email || !otp) {
+        throw new ApiError(400, 'Email and OTP required');
+      }
+
+      const otpRecord = await prisma.oTPCode.findFirst({
+        where: {
+          phone: email,
+          code: otp,
+          isUsed: false,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (!otpRecord) {
+        throw new ApiError(400, 'Invalid or expired OTP');
+      }
+
+      await prisma.oTPCode.update({
+        where: { id: otpRecord.id },
+        data: { isUsed: true },
+      });
+
+      let user = await prisma.user.findFirst({ where: { email } });
+      const isNewUser = !user;
+
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            phone: `email_${Date.now()}`,
+            email,
+            isVerified: true,
+            wallet: { create: { balance: 0 } },
+          },
+        });
+      }
+
+      const accessToken = this.generateAccessToken(user.id, user.role, 'user');
+      const refreshToken = this.generateRefreshToken(user.id);
+
+      await prisma.userSession.create({
+        data: {
+          userId: user.id,
+          token: refreshToken,
+          deviceInfo: req.headers['user-agent'] || null,
+          ipAddress: req.ip || null,
+          platform: req.body.platform || null,
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      res.json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user: {
+            id: user.id,
+            phone: user.phone,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            gender: user.gender,
+            isVerified: user.isVerified,
+            role: user.role,
+            language: user.language,
+          },
+          accessToken,
+          refreshToken,
+          isNewUser,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   registerExpert = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { name, email, phone, qualification, specialization, experience, category, perMinuteRate, languages, gender, bio } = req.body;
