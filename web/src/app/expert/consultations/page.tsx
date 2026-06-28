@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MessageSquare, Phone, Video, Clock, Filter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { MessageSquare, Phone, Video, Clock, Filter, ArrowRight } from 'lucide-react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -12,6 +13,7 @@ interface Consultation {
 }
 
 export default function ExpertConsultationsPage() {
+  const router = useRouter();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
@@ -99,6 +101,14 @@ export default function ExpertConsultationsPage() {
                   <span className={`badge border ${statusColors[c.status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30'}`}>
                     {c.status}
                   </span>
+                  {(c.status === 'ACTIVE' || c.status === 'ACCEPTED') && (
+                    <button
+                      onClick={() => router.push(`/expert/chat/${c.id}`)}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" /> Chat <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
             );
