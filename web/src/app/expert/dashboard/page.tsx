@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { MessageSquare, IndianRupee, Clock, Users, TrendingUp, CheckCircle, XCircle, Loader2, ArrowUpRight, Sparkles } from 'lucide-react';
+import { connectSocket, getSocket } from '@/lib/socket';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -16,12 +18,35 @@ interface PendingRequest {
 }
 
 export default function ExpertDashboardPage() {
+  const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [pending, setPending] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  useEffect(() => { fetchDashboard(); fetchPending(); }, []);
+  useEffect(() => {
+    fetchDashboard();
+    fetchPending();
+
+    // Connect socket for real-time requests
+    const token = localStorage.getItem('expertToken');
+    if (token) {
+      connectSocket(token);
+      const socket = getSocket();
+      if (socket) {
+        socket.on('consultation:request', (newReq: PendingRequest) => {
+          setPending((prev) => [newReq, ...prev]);
+        });
+      }
+    }
+
+    return () => {
+      const socket = getSocket();
+      if (socket) {
+        socket.off('consultation:request');
+      }
+    };
+  }, []);
 
   const fetchDashboard = async () => {
     try {
@@ -45,7 +70,14 @@ export default function ExpertDashboardPage() {
     setActionLoading(consultationId);
     try {
       const token = localStorage.getItem('expertToken');
-      await fetch(`${API_BASE}/api/consultations/${consultationId}/${action}`, { method: 'PUT', headers: { Authorization: `Bearer ${token}` } });
+      await fetch(`${API_BASE}/api/consultations/${action}/${consultationId}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (action === 'accept') {
+        router.push(`/expert/chat/${consultationId}`);
+        return;
+      }
       fetchPending(); fetchDashboard();
     } catch { /* ignore */ } finally { setActionLoading(null); }
   };
